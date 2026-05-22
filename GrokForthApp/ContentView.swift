@@ -19,23 +19,21 @@ struct ContentView: View {
             .onAppear {
                 isFocused = true
             }
+            // Force better scroll behavior
+            .scrollDisabled(false)
     }
     
     private func processInput(_ newText: String) {
         let lines = newText.components(separatedBy: .newlines)
         guard let lastLine = lines.last else { return }
         
-        // If user just pressed Enter on a new line
         if lastLine.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             let previousLine = lines.count >= 2 ? lines[lines.count - 2] : ""
-            
             let command = previousLine.trimmingCharacters(in: .whitespacesAndNewlines)
             
             if !command.isEmpty && !command.hasPrefix("===") {
-                // Execute the command
                 let result = interpreter.evaluate(command)
                 
-                // Append result safely
                 DispatchQueue.main.async {
                     if !result.isEmpty {
                         consoleText += result + "\n\n"
