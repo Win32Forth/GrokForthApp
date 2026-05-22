@@ -12,11 +12,11 @@ struct ContentView: View {
             .background(Color.white)
             .scrollContentBackground(.hidden)
             .focused($isFocused)
-            .onChange(of: consoleText) { newValue in
+            .onChange(of: consoleText) { oldValue, newValue in
                 processLastLine(newValue)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(4)
+            .padding(8)
             .onAppear {
                 isFocused = true
             }
@@ -26,7 +26,7 @@ struct ContentView: View {
         let lines = newText.components(separatedBy: .newlines)
         guard let lastLine = lines.last?.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
         
-        // Only process if user just pressed Return (last line is empty)
+        // Only process if user just pressed Return (empty last line)
         if lastLine.isEmpty && lines.count >= 2 {
             let previousLine = lines[lines.count - 2].trimmingCharacters(in: .whitespacesAndNewlines)
             
