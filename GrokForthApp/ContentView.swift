@@ -3,65 +3,41 @@ import SwiftUI
 struct ContentView: View {
     @State private var interpreter = GrokForthInterpreter()
     @State private var consoleText = "=== GrokForth Ready ===\n\n"
-    @State private var currentInput = ""
-    @FocusState private var inputFocused: Bool
+    @FocusState private var isFocused: Bool
     
     var body: some View {
         VStack(spacing: 0) {
-            ScrollView {
-                ScrollViewReader { proxy in
-                    VStack(alignment: .leading, spacing: 0) {
-                        Text(consoleText + currentInput)
-                            .font(.system(size: 14, design: .monospaced))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding()
-                            .textSelection(.enabled)
-                            .id("bottom")
-                    }
-                    .onChange(of: consoleText) {
-                        proxy.scrollTo("bottom", anchor: .bottom)
-                    }
+            TextEditor(text: $consoleText)
+                .font(.system(size: 14, design: .monospaced))
+                .foregroundColor(.black)
+                .background(Color.white)
+                .scrollContentBackground(.hidden)
+                .focused($isFocused)
+                .onSubmit {
+                    processLastLine()
                 }
-            }
-            .background(Color.white)
-            .foregroundColor(.black)
         }
         .frame(minWidth: 800, minHeight: 600)
-        .onTapGesture {
-            inputFocused = true
-        }
         .onAppear {
-            inputFocused = true
-        }
-        
-        // Invisible TextField for input handling
-        .overlay {
-            TextField("", text: $currentInput)
-                .focused($inputFocused)
-                .opacity(0)
-                .frame(width: 0, height: 0)
-                .onSubmit { submitInput() }
+            isFocused = true
         }
     }
     
-    private func submitInput() {
-        let command = currentInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !command.isEmpty else {
-            currentInput = ""
-            return
-        }
+    private func processLastLine() {
+        let lines = consoleText.components(separatedBy: .newlines)
+        guard let lastLine = lines.last?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !lastLine.isEmpty else { return }
         
-        consoleText += "Forth> \(command)\n"
-        
-        let result = interpreter.evaluate(command)
-        if !result.isEmpty {
-            consoleText += result + "\n"
-        }
-        
-        currentInput = ""
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            inputFocused = true
+        // Only process lines that start with "Forth>"
+        if lastLine.hasPrefix("Forth>") {
+            let command = lastLine.dropFirst(6).trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            let result = interpreter.evaluate(String(command))
+            
+            if !result.isEmpty {
+                consoleText += result + "\n"
+            }
+            consoleText += "\n"
         }
     }
 }
