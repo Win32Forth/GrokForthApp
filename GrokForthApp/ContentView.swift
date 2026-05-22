@@ -7,7 +7,6 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Console Output
             ScrollView {
                 Text(outputText)
                     .font(.system(size: 14, design: .monospaced))
@@ -15,11 +14,10 @@ struct ContentView: View {
                     .padding()
             }
             .background(Color.black)
-            .foregroundColor(.green)          // Changed from .lime to .green
+            .foregroundColor(.green)
             
             Divider()
             
-            // Command Input
             HStack {
                 TextField("Forth> ", text: $inputText)
                     .textFieldStyle(.roundedBorder)
