@@ -1,6 +1,7 @@
 import Foundation
 
 public class GrokForthInterpreter {
+    
     internal var dataStack: [Int] = []
     internal var returnStack: [Int] = []        // for loops
     

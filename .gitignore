@@ -1,0 +1,23 @@
+# Xcode
+*.xcuserdatad/
+*.xcworkspace/
+xcuserdata/
+DerivedData/
+build/
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Swift Package Manager
+/.build/
+Package.resolved
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
