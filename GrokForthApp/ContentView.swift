@@ -8,14 +8,14 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Main Console Output + Input Area
             ScrollView {
                 ScrollViewReader { proxy in
                     Text(consoleText + currentInput)
                         .font(.system(size: 14, design: .monospaced))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
-                        .textSelection(.enabled)           // Allows selecting text
+                        .textSelection(.enabled)
+                        .id("bottom")
                         .onChange(of: consoleText) { _ in
                             proxy.scrollTo("bottom", anchor: .bottom)
                         }
@@ -23,16 +23,12 @@ struct ContentView: View {
             }
             .background(Color.white)
             .foregroundColor(.black)
-            
-            // Invisible input field (for keyboard input)
-            TextField("", text: $currentInput)
-                .focused($inputFocused)
-                .opacity(0)
-                .frame(height: 0)
-                .onSubmit { submitInput() }
         }
         .frame(minWidth: 800, minHeight: 600)
         .onAppear {
+            inputFocused = true
+        }
+        .onTapGesture {
             inputFocused = true
         }
     }
@@ -44,21 +40,16 @@ struct ContentView: View {
             return
         }
         
-        // Add command to console
         consoleText += "Forth> \(command)\n"
         
-        // Execute Forth command
         let result = interpreter.evaluate(command)
-        
-        // Add result to console
         if !result.isEmpty {
             consoleText += result + "\n"
         }
         
         currentInput = ""
         
-        // Keep focus on the invisible input field
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             inputFocused = true
         }
     }
