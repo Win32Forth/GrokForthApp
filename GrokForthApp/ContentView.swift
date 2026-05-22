@@ -3,67 +3,44 @@ import SwiftUI
 struct ContentView: View {
     @State private var interpreter = GrokForthInterpreter()
     @State private var consoleText = "=== GrokForth Ready ===\n\n"
-    @State private var currentInput = ""
-    @FocusState private var inputFocused: Bool
+    @FocusState private var isFocused: Bool
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Main scrolling console area
-            ScrollView {
-                ScrollViewReader { proxy in
-                    Text(consoleText + currentInput)
-                        .font(.system(size: 14, design: .monospaced))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .textSelection(.enabled)
-                        .id("bottom")
-                        .onChange(of: consoleText) { _ in
-                            proxy.scrollTo("bottom", anchor: .bottom)
-                        }
-                }
-            }
-            .background(Color.white)
+        TextEditor(text: $consoleText)
+            .font(.system(size: 16, design: .monospaced))
             .foregroundColor(.black)
-            .scrollDisabled(false)           // Important for mouse wheel
-            
-            // Invisible input handler
-            .overlay {
-                TextField("", text: $currentInput)
-                    .focused($inputFocused)
-                    .opacity(0)
-                    .frame(width: 0, height: 0)
-                    .onSubmit { submitInput() }
+            .background(Color.white)
+            .scrollContentBackground(.hidden)
+            .focused($isFocused)
+            .onChange(of: consoleText) { newValue in
+                processLastLine(newValue)
             }
-        }
-        .frame(minWidth: 800, minHeight: 600)
-        .onTapGesture {
-            inputFocused = true
-        }
-        .onAppear {
-            inputFocused = true
-        }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(4)
+            .onAppear {
+                isFocused = true
+            }
     }
     
-    private func submitInput() {
-        let command = currentInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !command.isEmpty else {
-            currentInput = ""
-            return
-        }
+    private func processLastLine(_ newText: String) {
+        let lines = newText.components(separatedBy: .newlines)
+        guard let lastLine = lines.last?.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
         
-        consoleText += "Forth> \(command)\n"
-        
-        let result = interpreter.evaluate(command)
-        if !result.isEmpty {
-            consoleText += result + "\n\n"
-        } else {
-            consoleText += "\n"
-        }
-        
-        currentInput = ""
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            inputFocused = true
+        // Only process if user just pressed Return (last line is empty)
+        if lastLine.isEmpty && lines.count >= 2 {
+            let previousLine = lines[lines.count - 2].trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            if !previousLine.isEmpty && !previousLine.hasPrefix("===") {
+                let result = interpreter.evaluate(previousLine)
+                
+                DispatchQueue.main.async {
+                    if !result.isEmpty {
+                        consoleText += result + "\n\n"
+                    } else {
+                        consoleText += "\n"
+                    }
+                }
+            }
         }
     }
 }
