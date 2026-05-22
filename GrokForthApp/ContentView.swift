@@ -2,48 +2,64 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var interpreter = GrokForthInterpreter()
-    @State private var inputText = ""
-    @State private var outputText = "=== GrokForth Ready ===\nType Forth commands below.\n\n"
+    @State private var consoleText = "=== GrokForth Ready ===\n\n"
+    @State private var currentInput = ""
+    @FocusState private var inputFocused: Bool
     
     var body: some View {
         VStack(spacing: 0) {
+            // Main Console Output + Input Area
             ScrollView {
-                Text(outputText)
-                    .font(.system(size: 14, design: .monospaced))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
+                ScrollViewReader { proxy in
+                    Text(consoleText + currentInput)
+                        .font(.system(size: 14, design: .monospaced))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .textSelection(.enabled)           // Allows selecting text
+                        .onChange(of: consoleText) { _ in
+                            proxy.scrollTo("bottom", anchor: .bottom)
+                        }
+                }
             }
             .background(Color.white)
             .foregroundColor(.black)
             
-            Divider()
-            
-            HStack {
-                TextField("Forth> ", text: $inputText)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(size: 14, design: .monospaced))
-                    .onSubmit { sendCommand() }
-                
-                Button("Send") {
-                    sendCommand()
-                }
-            }
-            .padding()
+            // Invisible input field (for keyboard input)
+            TextField("", text: $currentInput)
+                .focused($inputFocused)
+                .opacity(0)
+                .frame(height: 0)
+                .onSubmit { submitInput() }
         }
-        .frame(minWidth: 720, minHeight: 520)
+        .frame(minWidth: 800, minHeight: 600)
+        .onAppear {
+            inputFocused = true
+        }
     }
     
-    private func sendCommand() {
-        let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        
-        outputText += "Forth> \(trimmed)\n"
-        
-        let result = interpreter.evaluate(trimmed)
-        if !result.isEmpty {
-            outputText += result + "\n"
+    private func submitInput() {
+        let command = currentInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !command.isEmpty else {
+            currentInput = ""
+            return
         }
         
-        inputText = ""
+        // Add command to console
+        consoleText += "Forth> \(command)\n"
+        
+        // Execute Forth command
+        let result = interpreter.evaluate(command)
+        
+        // Add result to console
+        if !result.isEmpty {
+            consoleText += result + "\n"
+        }
+        
+        currentInput = ""
+        
+        // Keep focus on the invisible input field
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            inputFocused = true
+        }
     }
 }
