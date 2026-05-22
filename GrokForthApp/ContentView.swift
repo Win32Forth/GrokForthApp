@@ -13,8 +13,8 @@ struct ContentView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
             }
-            .background(Color.black)
-            .foregroundColor(.green)
+            .background(Color.white)
+            .foregroundColor(.black)
             
             Divider()
             
