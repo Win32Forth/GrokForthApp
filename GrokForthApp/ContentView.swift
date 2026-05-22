@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var interpreter = GrokForthInterpreter()
+    @StateObject private var interpreter = GrokForthInterpreter()
     @State private var inputText = ""
     @State private var outputText = "=== GrokForth Ready ===\nType Forth commands below.\n\n"
     
