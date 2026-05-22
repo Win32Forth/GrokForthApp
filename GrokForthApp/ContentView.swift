@@ -6,38 +6,44 @@ struct ContentView: View {
     @FocusState private var isFocused: Bool
     
     var body: some View {
-        VStack(spacing: 0) {
-            TextEditor(text: $consoleText)
-                .font(.system(size: 14, design: .monospaced))
-                .foregroundColor(.black)
-                .background(Color.white)
-                .scrollContentBackground(.hidden)
-                .focused($isFocused)
-                .onSubmit {
-                    processLastLine()
-                }
-        }
-        .frame(minWidth: 800, minHeight: 600)
-        .onAppear {
-            isFocused = true
-        }
+        TextEditor(text: $consoleText)
+            .font(.system(size: 14, design: .monospaced))
+            .foregroundColor(.black)
+            .background(Color.white)
+            .scrollContentBackground(.hidden)
+            .focused($isFocused)
+            .onChange(of: consoleText) { newValue in
+                processInput(newValue)
+            }
+            .frame(minWidth: 800, minHeight: 600)
+            .onAppear {
+                isFocused = true
+            }
     }
     
-    private func processLastLine() {
-        let lines = consoleText.components(separatedBy: .newlines)
-        guard let lastLine = lines.last?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !lastLine.isEmpty else { return }
+    private func processInput(_ newText: String) {
+        let lines = newText.components(separatedBy: .newlines)
+        guard let lastLine = lines.last else { return }
         
-        // Only process lines that start with "Forth>"
-        if lastLine.hasPrefix("Forth>") {
-            let command = lastLine.dropFirst(6).trimmingCharacters(in: .whitespacesAndNewlines)
+        // If user just pressed Enter on a new line
+        if lastLine.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            let previousLine = lines.count >= 2 ? lines[lines.count - 2] : ""
             
-            let result = interpreter.evaluate(String(command))
+            let command = previousLine.trimmingCharacters(in: .whitespacesAndNewlines)
             
-            if !result.isEmpty {
-                consoleText += result + "\n"
+            if !command.isEmpty && !command.hasPrefix("===") {
+                // Execute the command
+                let result = interpreter.evaluate(command)
+                
+                // Append result safely
+                DispatchQueue.main.async {
+                    if !result.isEmpty {
+                        consoleText += result + "\n\n"
+                    } else {
+                        consoleText += "\n"
+                    }
+                }
             }
-            consoleText += "\n"
         }
     }
 }
