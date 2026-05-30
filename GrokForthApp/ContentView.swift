@@ -5,6 +5,7 @@ struct ContentView: View {
     @State private var consoleText = "=== GrokForth Ready ===\n\n"
     @State private var commandHistory: [String] = []
     @State private var historyIndex = -1
+    @State private var isRecallingHistory = false
     @FocusState private var isFocused: Bool
     
     var body: some View {
@@ -25,6 +26,10 @@ struct ContentView: View {
                 recallHistory(up: false)
                 return .handled
             }
+            .onKeyPress(.delete) {
+                handleDelete()
+                return .ignored
+            }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .padding(8)
             .onAppear {
@@ -33,29 +38,50 @@ struct ContentView: View {
     }
     
     private func checkForCommandExecution(_ text: String) {
+        guard !isRecallingHistory else { return }
+        
         let lines = text.components(separatedBy: .newlines)
-        guard let lastLine = lines.last, lastLine.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        guard let lastLine = lines.last else { return }
         
-        let previousLine = lines.count >= 2 ? lines[lines.count - 2].trimmingCharacters(in: .whitespacesAndNewlines) : ""
+        let trimmedLast = lastLine.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        if !previousLine.isEmpty && !previousLine.hasPrefix("===") {
-            // Add to history
-            if !commandHistory.contains(previousLine) {
+        if trimmedLast.isEmpty && lines.count >= 2 {
+            let previousLine = lines[lines.count - 2].trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            if !previousLine.isEmpty && !previousLine.hasPrefix("===") {
+                // Copy to front of history (duplicates allowed)
                 commandHistory.append(previousLine)
-                if commandHistory.count > 16 {
+                
+                if commandHistory.count > 20 {
                     commandHistory.removeFirst()
                 }
-            }
-            
-            let result = interpreter.evaluate(previousLine)
-            
-            DispatchQueue.main.async {
-                if !result.isEmpty {
-                    consoleText += result + "\n\n"
-                } else {
-                    consoleText += "\n"
+                
+                let result = interpreter.evaluate(previousLine)
+                
+                DispatchQueue.main.async {
+                    if !result.isEmpty {
+                        consoleText += result + "\n\n"
+                    } else {
+                        consoleText += "\n"
+                    }
+                    historyIndex = -1
                 }
-                historyIndex = -1
+            }
+        }
+    }
+    
+    private func handleDelete() {
+        var lines = consoleText.components(separatedBy: .newlines)
+        guard !lines.isEmpty else { return }
+        
+        let lastIndex = lines.count - 1
+        let currentLine = lines[lastIndex]
+        
+        // Prevent deleting into previous output when on a fresh empty prompt line
+        if currentLine.isEmpty && lastIndex > 0 {
+            let prevLine = lines[lastIndex - 1].trimmingCharacters(in: .whitespacesAndNewlines)
+            if prevLine.hasPrefix("===") || prevLine.isEmpty {
+                return  // Block delete to protect output
             }
         }
     }
@@ -69,18 +95,42 @@ struct ContentView: View {
             historyIndex = max(historyIndex - 1, -1)
         }
         
-        guard historyIndex >= 0 else { return }
+        guard historyIndex >= 0 else {
+            clearCurrentInputLine()
+            return
+        }
         
         let selectedCommand = commandHistory[commandHistory.count - 1 - historyIndex]
+        insertTextSimulated(selectedCommand)
+    }
+    
+    private func insertTextSimulated(_ text: String) {
+        isRecallingHistory = true
+        clearCurrentInputLine()
         
-        // Replace the current line carefully
+        Task {
+            for character in text {
+                await MainActor.run {
+                    consoleText += String(character)
+                }
+                try? await Task.sleep(for: .milliseconds(6))
+            }
+            await MainActor.run {
+                isRecallingHistory = false
+            }
+        }
+    }
+    
+    private func clearCurrentInputLine() {
         var lines = consoleText.components(separatedBy: .newlines)
+        guard !lines.isEmpty else { return }
+        
         let lastIndex = lines.count - 1
         
-        if lines[lastIndex].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            lines[lastIndex - 1] = selectedCommand
+        if lastIndex > 0 && lines[lastIndex].trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            lines[lastIndex - 1] = ""
         } else {
-            lines[lastIndex] = selectedCommand
+            lines[lastIndex] = ""
         }
         
         consoleText = lines.joined(separator: "\n")
