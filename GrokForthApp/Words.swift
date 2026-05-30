@@ -40,6 +40,7 @@ extension GrokForthInterpreter {
         ("CR",      "( -- )",             "carriage return"),
         ("SPACE",   "( -- )",             "print space"),
         ("SPACES",  "( n -- )",           "print n spaces"),
+        ("\\S",     "( -- )",             "stop loading the current source file (used inside FLOAD)"),
         
         // Control Flow
         ("DO",      "( limit start -- )", "start counted loop"),
@@ -140,7 +141,7 @@ extension GrokForthInterpreter {
         ("+LOOP",   "( n -- )",           "end DO loop with increment (partial)")
     ]
     
-    private static let primitiveLookup: [String: (stack: String, desc: String)] = {
+    internal static let primitiveLookup: [String: (stack: String, desc: String)] = {
         Dictionary(uniqueKeysWithValues: primitives.map { 
             ($0.name, (stack: $0.stack, desc: $0.desc)) 
         })

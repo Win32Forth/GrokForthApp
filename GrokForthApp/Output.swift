@@ -10,6 +10,7 @@ extension GrokForthInterpreter {
         case "CR": outputBuffer += "\n"
         case "SPACE": outputBuffer += " "
         case "SPACES": let n = try pop(); outputBuffer += String(repeating: " ", count: n)
+        case "\\S": outputBuffer += " "
         case "U.": let v = try pop(); outputBuffer += "\(UInt(v)) "
         case "U.R": /* right justified unsigned */ break
         default: break

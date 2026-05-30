@@ -19,9 +19,14 @@ extension GrokForthInterpreter {
                 continue
             }
             
-            // \ comment
-            if input[i] == "\\" && (i == input.startIndex || input[input.index(before: i)].isWhitespace) {
-                break
+            // \ comment (but allow \S as a real word - synonym for SPACE)
+            if input[i] == "\\" {
+                let nextIdx = input.index(i, offsetBy: 1)
+                let isBackslashS = nextIdx < input.endIndex && input[nextIdx].uppercased() == "S"
+                
+                if !isBackslashS && (i == input.startIndex || input[input.index(before: i)].isWhitespace) {
+                    break
+                }
             }
             
             // S" ..." , ." ..." and .( ... )

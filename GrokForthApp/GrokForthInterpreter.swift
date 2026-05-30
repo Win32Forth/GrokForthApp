@@ -19,6 +19,10 @@ public class GrokForthInterpreter {
     /// Current working directory used by FLOAD for relative paths
     internal var currentDirectory: URL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
     
+    /// When set, causes the current source file (via interpret/FLOAD) to stop processing.
+    /// Used by \S
+    internal var stopSourceLoading = false
+    
     internal var compileState: CompileState? = nil
     internal let logger: ((String) -> Void)?
     
@@ -28,6 +32,7 @@ public class GrokForthInterpreter {
     
     public func evaluate(_ input: String) -> String {
         outputBuffer = ""
+        stopSourceLoading = false
         let tokens = tokenize(input)
         guard !tokens.isEmpty else { return " ok" }
         
@@ -35,14 +40,17 @@ public class GrokForthInterpreter {
             try processTokens(tokens)
             let result = outputBuffer.isEmpty ? " ok" : outputBuffer + " ok"
             outputBuffer = ""
+            stopSourceLoading = false
             return result
         } catch let error as ForthError {
             dataStack.removeAll()
             returnStack.removeAll()
+            stopSourceLoading = false
             return "\(error.errorDescription)\n ok"
         } catch {
             dataStack.removeAll()
             returnStack.removeAll()
+            stopSourceLoading = false
             return "Error\n ok"
         }
     }
@@ -96,6 +104,7 @@ public class GrokForthInterpreter {
     /// Internal interpreter used by FLOAD and nested loads.
     /// Does not reset outputBuffer or append " ok".
     internal func interpret(_ source: String) {
+        stopSourceLoading = false
         let tokens = tokenize(source)
         do {
             try processTokens(tokens)
@@ -104,6 +113,7 @@ public class GrokForthInterpreter {
         } catch {
             outputBuffer += "\nError during interpretation\n"
         }
+        stopSourceLoading = false
     }
     
     /// Load and interpret a Forth source file.

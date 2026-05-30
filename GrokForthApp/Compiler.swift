@@ -6,7 +6,17 @@ extension GrokForthInterpreter {
         print("DEBUG TOKENS: \(tokens)")
         var ip = 0
         while ip < tokens.count {
+            if stopSourceLoading {
+                break
+            }
             let token = tokens[ip]
+            
+            // \S stops loading the current source file (used inside FLOAD)
+            if token == "\\S" {
+                stopSourceLoading = true
+                ip += 1
+                continue
+            }
             
             // Handle .( immediately (even during compilation) - it is an immediate parsing word
             if token.hasPrefix("\u{01}.(") {
@@ -110,7 +120,7 @@ extension GrokForthInterpreter {
                 try handleStrings(token)   // for S" and ."
                 continue
             }
-            if ["TYPE", "EMIT", "CR", "SPACE", "SPACES", ".", "U."].contains(token) {
+            if ["TYPE", "EMIT", "CR", "SPACE", "SPACES", ".", "U.", "\\S"].contains(token) {
                 try handleOutput(token)
                 continue
             }
@@ -313,9 +323,16 @@ extension GrokForthInterpreter {
         let upper = name.uppercased()
         if let body = dictionary[upper] {
             outputBuffer += ": \(upper) \(body.joined(separator: " ")) ;\n"
-        } else {
-            outputBuffer += "\(upper) ?\n"
+            return
         }
+        
+        // Fall back to primitive documentation for SEE
+        if let info = Self.primitiveLookup[upper] {
+            outputBuffer += "\(upper)  \(info.stack)  \(info.desc)\n"
+            return
+        }
+        
+        outputBuffer += "\(upper) ?\n"
     }
     
     /// Implements ANS FORGET semantics using wordOrder
