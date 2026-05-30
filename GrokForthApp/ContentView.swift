@@ -59,7 +59,11 @@ struct ContentView: View {
                 let result = interpreter.evaluate(previousLine)
                 
                 DispatchQueue.main.async {
-                    if !result.isEmpty {
+                    if interpreter.clearScreenRequested {
+                        // CLS was executed — clear the console
+                        consoleText = "=== GrokForth Ready ===\n\n"
+                        interpreter.clearScreenRequested = false
+                    } else if !result.isEmpty {
                         consoleText += result + "\n\n"
                     } else {
                         consoleText += "\n"

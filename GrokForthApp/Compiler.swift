@@ -28,6 +28,26 @@ extension GrokForthInterpreter {
             if token == "VARIABLE" { try defineVariable(tokens, &ip); continue }
             if token == "CONSTANT" || token == "VALUE" { try defineConstant(tokens, &ip); continue }
             
+            // Special words (CLS, RESET, FORGET)
+            if token == "CLS" {
+                clearScreenRequested = true
+                continue
+            }
+            if token == "RESET" {
+                reset()
+                // The UI will detect clearScreenRequested and redisplay
+                // the initial "=== GrokForth Ready ===" message.
+                continue
+            }
+            if token == "FORGET" {
+                try forgetWord(tokens, &ip)
+                continue
+            }
+            if token == "HELP" {
+                try helpWord(tokens, &ip)
+                continue
+            }
+            
             // Memory & Base
             if token == "@" { let addr = try pop(); push(memory[addr] ?? 0); continue }
             if token == "!" { let addr = try pop(); let val = try pop(); memory[addr] = val; continue }
@@ -159,6 +179,7 @@ extension GrokForthInterpreter {
 
             case "WORDS": listWords()
             case "SEE": try seeWord(tokens, &ip)
+            case "HELP": try helpWord(tokens, &ip)
             default:
                 throw ForthError.unknownWord(token)
             }
@@ -209,6 +230,9 @@ extension GrokForthInterpreter {
     private func endColonDefinition() throws {
         guard let state = compileState else { return }
         dictionary[state.name] = state.tokens
+        if !wordOrder.contains(state.name) {
+            wordOrder.append(state.name)
+        }
         logger?("COMPILED \(state.name)  body: \(state.tokens)")
         compileState = nil
     }
@@ -221,6 +245,9 @@ extension GrokForthInterpreter {
         memory[addr] = 0
         nextAddress += 1
         dictionary[name] = [String(addr)]
+        if !wordOrder.contains(name) {
+            wordOrder.append(name)
+        }
         logger?("VARIABLE \(name) @ \(addr)")
     }
     
@@ -230,6 +257,10 @@ extension GrokForthInterpreter {
         ip += 1
         let value = try pop()
         constants[name] = value
+        dictionary[name] = [String(value)]   // so SEE and WORDS see it
+        if !wordOrder.contains(name) {
+            wordOrder.append(name)
+        }
         logger?("CONSTANT \(name) = \(value)")
     }
     
@@ -246,5 +277,26 @@ extension GrokForthInterpreter {
         } else {
             outputBuffer += "\(name) ?\n"
         }
+    }
+    
+    /// Implements ANS FORGET semantics using wordOrder
+    private func forgetWord(_ tokens: [String], _ ip: inout Int) throws {
+        guard ip < tokens.count else {
+            throw ForthError.unknownWord("FORGET")
+        }
+        let name = tokens[ip]
+        ip += 1
+        try forget(name)
+    }
+    
+    /// HELP <word> - shows documentation for a specific word
+    private func helpWord(_ tokens: [String], _ ip: inout Int) throws {
+        guard ip < tokens.count else {
+            outputBuffer += "HELP <word>\n"
+            return
+        }
+        let name = tokens[ip]
+        ip += 1
+        help(for: name)
     }
 }
