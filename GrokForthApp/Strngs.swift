@@ -27,6 +27,14 @@ extension GrokForthInterpreter {
                 content.removeFirst()
             }
             outputBuffer += content
+            
+        } else if token.hasPrefix("\u{01}.(") {
+            // .( text )  — print immediately (used for messages while loading files)
+            var content = String(token.dropFirst(3))
+            if content.hasPrefix(" ") {
+                content.removeFirst()
+            }
+            outputBuffer += content
         }
     }
 }

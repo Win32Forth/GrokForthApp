@@ -24,20 +24,25 @@ extension GrokForthInterpreter {
                 break
             }
             
-            // S" ..." and ." ..."
+            // S" ..." , ." ..." and .( ... )
             if i < input.index(input.endIndex, offsetBy: -1) {
                 let prefix = input[i...input.index(i, offsetBy: 1)]
-                if prefix == "S\"" || prefix == ".\"" {
-                    let isS = input[i] == "S"
-                    i = input.index(i, offsetBy: 2)   // skip S" or ."
+                if prefix == "S\"" || prefix == ".\"" || prefix == ".(" {
+                    let isS = prefix == "S\""
+                    let isDotParen = prefix == ".("
+                    
+                    i = input.index(i, offsetBy: 2)   // skip two chars
+                    
                     var content = ""
-                    while i < input.endIndex && input[i] != "\"" {
+                    let terminator: Character = isDotParen ? ")" : "\""
+                    
+                    while i < input.endIndex && input[i] != terminator {
                         content.append(input[i])
                         i = input.index(after: i)
                     }
                     if i < input.endIndex { i = input.index(after: i) }
                     
-                    let prefixChar = isS ? "S\"" : ".\""
+                    let prefixChar = isS ? "S\"" : (isDotParen ? ".(" : ".\"")
                     tokens.append("\u{01}" + prefixChar + content)
                     continue
                 }

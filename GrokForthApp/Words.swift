@@ -59,6 +59,16 @@ extension GrokForthInterpreter {
         ("WORDS",   "( -- )",             "list all words"),
         ("SEE",     "( -- name )",        "decompile word"),
         ("HELP",    "( -- ) name",        "show help for a word"),
+        (".(",      "( -- )",             "print text until ) immediately (used while loading)"),
+        ("FLOAD",   "( -- ) name",        "load Forth source file from disk"),
+        ("RESET",   "( -- )",             "reset interpreter state and clear screen"),
+        ("CLS",     "( -- )",             "clear the console screen"),
+        ("FORGET",  "( -- ) name",        "forget a word and all words defined after it"),
+        ("CHDIR",   "( -- ) [path]",      "change or display current directory"),
+        ("DIR",     "( -- ) [filespec]",  "list directory (MS-DOS style, supports wildcards)"),
+        ("LS",      "( -- ) [filespec]",  "synonym for DIR - list directory"),
+        ("MKDIR",   "( -- ) name",        "create a new directory"),
+        ("EDIT",    "( -- ) [name]",      "edit file in TextEdit (defaults to .fth)"),
         ("VARIABLE","( -- ) name",        "create variable"),
         ("CONSTANT","( n -- ) name",      "create constant"),
         ("VALUE",   "( n -- ) name",      "create value"),
@@ -79,7 +89,55 @@ extension GrokForthInterpreter {
         ("DECIMAL", "( -- )",             "set base 10"),
         ("OCTAL",   "( -- )",             "set base 8"),
         ("BINARY",  "( -- )",             "set base 2"),
-        ("BASE",    "( -- addr )",        "push base address")
+        ("BASE",    "( -- addr )",        "push base address"),
+
+        // Comparisons (implemented in dispatch)
+        ("=",       "( n1 n2 -- flag )",  "equal"),
+        ("<>",      "( n1 n2 -- flag )",  "not equal"),
+        ("<",       "( n1 n2 -- flag )",  "less than"),
+        (">",       "( n1 n2 -- flag )",  "greater than"),
+        ("<=",      "( n1 n2 -- flag )",  "less or equal"),
+        (">=",      "( n1 n2 -- flag )",  "greater or equal"),
+        ("0=",      "( n -- flag )",      "zero?"),
+        ("0<",      "( n -- flag )",      "negative?"),
+        ("0>",      "( n -- flag )",      "positive?"),
+
+        // Extended Memory
+        (",",       "( n -- )",           "compile cell"),
+        ("C,",      "( b -- )",           "compile byte"),
+        ("ALLOT",   "( n -- )",           "allocate memory"),
+        ("HERE",    "( -- addr )",        "current dictionary pointer"),
+        ("-!",      "( n addr -- )",      "subtract from cell"),
+        ("CELL+",   "( addr -- addr' )",  "add cell size"),
+        ("CELLS",   "( n -- n )",         "cells to bytes (identity here)"),
+        ("CHAR+",   "( addr -- addr' )",  "add char size"),
+        ("CHARS",   "( n -- n )",         "chars to bytes (identity here)"),
+        ("2@",      "( addr -- n1 n2 )",  "fetch double cell"),
+        ("2!",      "( n1 n2 addr -- )",  "store double cell"),
+
+        // Extended Stack / Return
+        (">R",      "( n -- ) ( R: -- n )", "to return stack"),
+        ("R>",      "( -- n ) ( R: n -- )", "from return stack"),
+        ("R@",      "( -- n ) ( R: n -- n )", "copy top of return stack"),
+        ("2>R",     "( n1 n2 -- ) ( R: -- n1 n2 )", "two to return stack"),
+        ("2R>",     "( -- n1 n2 ) ( R: n1 n2 -- )", "two from return stack"),
+        ("2R@",     "( -- n1 n2 ) ( R: n1 n2 -- n1 n2 )", "copy two from return stack"),
+        ("PICK",    "( n -- n )",         "pick nth stack item"),
+        ("ROLL",    "( n -- )",           "roll nth stack item"),
+
+        // More Output
+        ("U.",      "( u -- )",           "print unsigned"),
+        ("U.R",     "( u n -- )",         "print unsigned right justified"),
+        ("TYPE",    "( addr len -- )",    "print string"),
+        ("EMIT",    "( c -- )",           "print character"),
+
+        // Misc
+        ("ARSHIFT", "( n bits -- n )",    "arithmetic right shift"),
+        ("BL",      "( -- 32 )",          "blank character (space)"),
+        ("CHAR",    "( -- c )",           "parse character (stub)"),
+
+        // Extended Control
+        ("+LOOP",   "( n -- )",           "end DO loop with increment (partial)")
     ]
     
     private static let primitiveLookup: [String: (stack: String, desc: String)] = {

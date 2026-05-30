@@ -8,6 +8,13 @@ extension GrokForthInterpreter {
         while ip < tokens.count {
             let token = tokens[ip]
             
+            // Handle .( immediately (even during compilation) - it is an immediate parsing word
+            if token.hasPrefix("\u{01}.(") {
+                try handleStrings(token)
+                ip += 1
+                continue
+            }
+            
             // COMPILE MODE
             if compileState != nil {
                 if token == ";" {
@@ -45,6 +52,26 @@ extension GrokForthInterpreter {
             }
             if token == "HELP" {
                 try helpWord(tokens, &ip)
+                continue
+            }
+            if token == "FLOAD" {
+                try floadWord(tokens, &ip)
+                continue
+            }
+            if token == "CHDIR" {
+                try chdirWord(tokens, &ip)
+                continue
+            }
+            if token == "DIR" || token == "LS" {
+                try dirWord(tokens, &ip)
+                continue
+            }
+            if token == "MKDIR" {
+                try mkdirWord(tokens, &ip)
+                continue
+            }
+            if token == "EDIT" {
+                try editWord(tokens, &ip)
                 continue
             }
             
@@ -180,6 +207,12 @@ extension GrokForthInterpreter {
             case "WORDS": listWords()
             case "SEE": try seeWord(tokens, &ip)
             case "HELP": try helpWord(tokens, &ip)
+            case "FLOAD": try floadWord(tokens, &ip)
+            case "CHDIR": try chdirWord(tokens, &ip)
+            case "DIR": try dirWord(tokens, &ip)
+            case "LS": try dirWord(tokens, &ip)
+            case "MKDIR": try mkdirWord(tokens, &ip)
+            case "EDIT": try editWord(tokens, &ip)
             default:
                 throw ForthError.unknownWord(token)
             }
@@ -304,5 +337,61 @@ extension GrokForthInterpreter {
         let name = tokens[ip]
         ip += 1
         help(for: name)
+    }
+    
+    /// FLOAD <filename> - load and interpret a Forth source file.
+    /// Supports both absolute and relative paths.
+    private func floadWord(_ tokens: [String], _ ip: inout Int) throws {
+        guard ip < tokens.count else {
+            outputBuffer += "FLOAD <filename>\n"
+            return
+        }
+        let filename = tokens[ip]
+        ip += 1
+        fload(filename)
+    }
+    
+    /// CHDIR [<path>] - change directory or display current directory
+    private func chdirWord(_ tokens: [String], _ ip: inout Int) throws {
+        if ip < tokens.count {
+            let path = tokens[ip]
+            ip += 1
+            chdir(path)
+        } else {
+            chdir(nil)
+        }
+    }
+    
+    /// DIR [<filespec>] - list directory contents with optional wildcard filter
+    private func dirWord(_ tokens: [String], _ ip: inout Int) throws {
+        if ip < tokens.count {
+            let pattern = tokens[ip]
+            ip += 1
+            dir(pattern)
+        } else {
+            dir(nil)
+        }
+    }
+    
+    /// MKDIR <directory> - create a new directory (supports relative and absolute paths)
+    private func mkdirWord(_ tokens: [String], _ ip: inout Int) throws {
+        guard ip < tokens.count else {
+            outputBuffer += "MKDIR <directory>\n"
+            return
+        }
+        let path = tokens[ip]
+        ip += 1
+        mkdir(path)
+    }
+    
+    /// EDIT [<filename>] - open file in TextEdit (creates .fth file if needed)
+    private func editWord(_ tokens: [String], _ ip: inout Int) throws {
+        if ip < tokens.count {
+            let filename = tokens[ip]
+            ip += 1
+            edit(filename)
+        } else {
+            edit(nil)
+        }
     }
 }
