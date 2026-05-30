@@ -272,10 +272,16 @@ extension GrokForthInterpreter {
         guard ip < tokens.count else { return }
         let name = tokens[ip].uppercased()
         ip += 1
-        if let body = dictionary[name] {
-            outputBuffer += ": \(name) \(body.joined(separator: " ")) ;\n"
+        appendDefinition(of: name)
+    }
+
+    /// Shared helper used by both SEE and HELP for user-defined words
+    internal func appendDefinition(of name: String) {
+        let upper = name.uppercased()
+        if let body = dictionary[upper] {
+            outputBuffer += ": \(upper) \(body.joined(separator: " ")) ;\n"
         } else {
-            outputBuffer += "\(name) ?\n"
+            outputBuffer += "\(upper) ?\n"
         }
     }
     

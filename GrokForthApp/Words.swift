@@ -89,21 +89,16 @@ extension GrokForthInterpreter {
     }()
     
     func listWords() {
-        // Combine primitives + user-defined words
-        var allWords = dictionary.keys.map { name in
-            (name: name, stack: "( -- )", desc: "user-defined")
-        }
-        allWords.append(contentsOf: Self.primitives)
+        // Built-in words in alphabetical order
+        let builtinNames = Self.primitives.map { $0.name }.sorted()
         
-        let sorted = allWords.sorted { $0.name < $1.name }
+        // User-defined words in the order they were compiled (definition order)
+        let userNames = wordOrder
         
-        outputBuffer += "\n=== GrokForth Dictionary ===\n"
-        outputBuffer += "Total words: \(sorted.count)\n\n"
+        // Internals first (alpha), then user words (compile order) at the end
+        let allWords = builtinNames + userNames
         
-        for w in sorted {
-            outputBuffer += "  \(w.name.padding(toLength: 10, withPad: " ", startingAt: 0)) \(w.stack)  \(w.desc)\n"
-        }
-        outputBuffer += "\n"
+        outputBuffer += allWords.joined(separator: " ") + "\n"
     }
     
     /// Displays help information for a single word (used by HELP <word>)
@@ -117,6 +112,8 @@ extension GrokForthInterpreter {
         
         if dictionary[upper] != nil {
             outputBuffer += "\n\(upper)  ( -- )  user-defined\n\n"
+            appendDefinition(of: upper)
+            outputBuffer += "\n"
             return
         }
         
